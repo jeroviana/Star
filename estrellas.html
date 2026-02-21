@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estrellas de la Semana - Asamblea Jerovia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cielo-oscuro: #1a1a2e;
+            --lila-magico: #bdb2ff;
+            --dorado-estrella: #ffea00;
+            --arcoiris: linear-gradient(90deg, #ffadad, #ffd6a5, #fdffb6, #caffbf, #9bf6ff, #a0c4ff, #bdb2ff);
+        }
+
+        body {
+            margin: 0;
+            background: var(--cielo-oscuro);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Fondo de estrellas titilantes */
+        .stars-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at center, #242444 0%, #1a1a2e 100%);
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            border-bottom: 3px solid transparent;
+            border-image: var(--arcoiris) 1;
+            width: 100%;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            margin: 0;
+            color: var(--lila-magico);
+            text-shadow: 0 0 15px rgba(189, 178, 255, 0.5);
+        }
+
+        /* Pantalla de Login */
+        #login-section {
+            margin-top: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 12px;
+            border: none;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .btn-magico {
+            background: var(--arcoiris);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+            transition: 0.3s;
+        }
+
+        .btn-magico:hover { transform: scale(1.02); opacity: 0.9; }
+
+        /* Contenedor de burbujas de votación */
+        #vote-section {
+            display: none;
+            padding: 40px 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1000px;
+        }
+
+        .hermana-bubble {
+            background: rgba(189, 178, 255, 0.2);
+            border: 2px solid var(--lila-magico);
+            padding: 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-align: center;
+            min-width: 120px;
+            user-select: none;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .hermana-bubble:hover {
+            background: var(--lila-magico);
+            color: var(--cielo-oscuro);
+            box-shadow: 0 0 20px var(--lila-magico);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Animación de la estrella */
+        .flying-star {
+            position: fixed;
+            font-size: 2rem;
+            color: var(--dorado-estrella);
+            z-index: 2000;
+            pointer-events: none;
+            animation: flyUp 1.5s forwards ease-in;
+        }
+
+        @keyframes flyUp {
+            0% { transform: scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-100vh) scale(3) rotate(360deg); opacity: 0; }
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="stars-container"></div>
+
+    <header>
+        <h1>¿Quién brilla hoy?</h1>
+        <p style="font-size: 0.8rem; opacity: 0.7;">Regala una estrella a una hermana destacada</p>
+    </header>
+
+    <div id="login-section">
+        <select id="select-usuario">
+            <option value="">Cargando hermanas...</option>
+        </select>
+        <input type="password" id="pass-usuario" placeholder="Tu contraseña">
+        <button class="btn-magico" onclick="acceder()">Entrar al cielo</button>
+    </div>
+
+    <div id="vote-section"></div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZC6cOAM7oSEPkQ75Nxea1HZRIiZWYb-wospwtYBW7WxenPDxWHK8PYYxnKcCn3PhPkQ/exec";
+        let listaHermanas = [];
+        let usuarioActual = "";
+        let passActual = "";
+
+        // Cargar lista al iniciar
+        async function cargarHermanas() {
+            const resp = await fetch(SCRIPT_URL);
+            listaHermanas = await resp.json();
+            const select = document.getElementById('select-usuario');
+            select.innerHTML = '<option value="">Elige tu nombre</option>';
+            listaHermanas.forEach(h => {
+                select.innerHTML += `<option value="${h}">${h}</option>`;
+            });
+        }
+
+        function acceder() {
+            usuarioActual = document.getElementById('select-usuario').value;
+            passActual = document.getElementById('pass-usuario').value;
+            
+            if(!usuarioActual || !passActual) {
+                alert("Por favor completa tus datos");
+                return;
+            }
+
+            document.getElementById('login-section').style.display = 'none';
+            const voteSection = document.getElementById('vote-section');
+            voteSection.style.display = 'flex';
+            
+            renderBubbles();
+        }
+
+        function renderBubbles() {
+            const div = document.getElementById('vote-section');
+            div.innerHTML = "";
+            listaHermanas.forEach(h => {
+                const bubble = document.createElement('div');
+                bubble.className = 'hermana-bubble';
+                bubble.innerText = h;
+                // Evento de doble click
+                bubble.ondblclick = (e) => enviarEstrella(h, e);
+                div.appendChild(bubble);
+            });
+        }
+
+        async function enviarEstrella(elegida, event) {
+            if(!confirm(`¿Quieres dar tu estrella de hoy a ${elegida}?`)) return;
+
+            // Animación
+            const star = document.createElement('div');
+            star.className = 'flying-star';
+            star.innerHTML = '✨';
+            star.style.left = event.clientX + 'px';
+            star.style.top = event.clientY + 'px';
+            document.body.appendChild(star);
+
+            const payload = {
+                votante: usuarioActual,
+                password: passActual,
+                elegida: elegida
+            };
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const res = await response.json();
+                
+                alert(res.status);
+                if(res.status.includes("éxito")) {
+                    location.reload(); // Recargar para cerrar sesión
+                }
+            } catch (e) {
+                alert("Hubo un problema al enviar la estrella.");
+            }
+        }
+
+        cargarHermanas();
+    </script>
+</body>
+</html>
